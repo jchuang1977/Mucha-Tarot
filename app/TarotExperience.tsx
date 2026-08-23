@@ -81,15 +81,28 @@ export default function TarotExperience({ formattedDate, viewer, authHref }: {
       if (!root) return;
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const card = root.querySelector('.revealed-card');
+      const backFace = root.querySelector('.card-back-face');
+      const frontFace = root.querySelector('.card-front-face');
       const deck = root.querySelectorAll('.deck-card');
       const readingItems = root.querySelectorAll('.reading-section, .reading-footer, .error-reading');
+      if (!card || !backFace || !frontFace) return;
       timelineRef.current?.kill();
-      timelineRef.current = gsap.timeline({ defaults: { ease: 'power2.out' }, onComplete: () => setPhase(value.reading ? 'ready' : 'error') })
-        .set(card, { autoAlpha: 1, rotationY: 0, y: reduce ? 0 : 32, scale: reduce ? 1 : .92 })
+      const timeline = gsap.timeline({ defaults: { ease: 'power2.out' }, onComplete: () => setPhase(value.reading ? 'ready' : 'error') })
+        .set(card, { autoAlpha: 1, y: reduce ? 0 : 32, scale: reduce ? 1 : .92 })
+        .set(backFace, { autoAlpha: 1, rotationY: 0 })
+        .set(frontFace, { autoAlpha: 0, rotationY: reduce ? 0 : -90 })
         .to(deck, { autoAlpha: 0, scale: .9, duration: reduce ? .01 : .35, stagger: .03 })
-        .to(card, { y: 0, scale: 1, duration: reduce ? .01 : .45 }, '<')
-        .to(card, { rotationY: 180, duration: reduce ? .01 : .9, ease: 'power3.inOut' }, '+=.05')
-        .fromTo(readingItems, { autoAlpha: 0, y: reduce ? 0 : 14 }, { autoAlpha: 1, y: 0, duration: reduce ? .01 : .48, stagger: reduce ? 0 : .1 }, '-=.15');
+        .to(card, { y: 0, scale: 1, duration: reduce ? .01 : .45 }, '<');
+      if (reduce) {
+        timeline.set(backFace, { autoAlpha: 0 }).set(frontFace, { autoAlpha: 1, rotationY: 0 });
+      } else {
+        timeline
+          .to(backFace, { rotationY: 90, autoAlpha: 0, duration: .42, ease: 'power2.in' }, '+=.05')
+          .set(frontFace, { autoAlpha: 1 })
+          .to(frontFace, { rotationY: 0, duration: .48, ease: 'power2.out' });
+      }
+      timeline.fromTo(readingItems, { autoAlpha: 0, y: reduce ? 0 : 14 }, { autoAlpha: 1, y: 0, duration: reduce ? .01 : .48, stagger: reduce ? 0 : .1 }, '-=.15');
+      timelineRef.current = timeline;
     });
   }
 
@@ -104,7 +117,7 @@ export default function TarotExperience({ formattedDate, viewer, authHref }: {
     if (!card || matchMedia('(prefers-reduced-motion: reduce)').matches) { void draw(); return; }
     timelineRef.current?.kill();
     timelineRef.current = gsap.timeline({ onComplete: () => void draw() })
-      .to(card, { rotationY: 0, y: 30, scale: .92, autoAlpha: 0, duration: .5, ease: 'power2.in' });
+      .to(card, { y: 30, scale: .92, autoAlpha: 0, duration: .5, ease: 'power2.in' });
   }
 
   const busy = phase === 'shuffling' || phase === 'interpreting' || phase === 'revealing';

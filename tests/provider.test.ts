@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { generateReading } from '../lib/provider';
+import { generateReading, testProvider } from '../lib/provider';
 import { tarotDeck } from '../lib/tarot';
 
 const valid = JSON.stringify({
@@ -19,6 +19,13 @@ function providerResponse(content: string, status = 200) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('AI reading validation', () => {
+  it('tests the structured format instead of accepting any non-empty reply', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(providerResponse(valid)));
+    await expect(testProvider({ baseUrl: 'https://api.example.com/v1', model: 'model', apiKey: 'secret' })).resolves.toBeUndefined();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(providerResponse('OK')));
+    await expect(testProvider({ baseUrl: 'https://api.example.com/v1', model: 'model', apiKey: 'secret' })).rejects.toThrow();
+  });
+
   it('accepts a complete structured reading', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(providerResponse(valid)));
     const reading = await generateReading({
@@ -36,6 +43,18 @@ describe('AI reading validation', () => {
       card: tarotDeck[1], orientation: 'reversed', date: '2026-08-23',
     })).resolves.toMatchObject({ reminder: expect.any(String) });
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('disables LongCat thinking and accepts fenced JSON', async () => {
+    const request = vi.fn().mockResolvedValue(providerResponse(`說明如下：\n\`\`\`json\n${valid}\n\`\`\``));
+    vi.stubGlobal('fetch', request);
+    await expect(generateReading({
+      config: { baseUrl: 'https://api.longcat.ai/openai/v1', model: 'LongCat-2.0', apiKey: 'secret' },
+      card: tarotDeck[0], orientation: 'upright', date: '2026-08-23',
+    })).resolves.toMatchObject({ theme: expect.any(String) });
+    const body = JSON.parse(request.mock.calls[0][1].body as string);
+    expect(body.thinking).toEqual({ type: 'disabled' });
+    expect(body.max_tokens).toBe(1200);
   });
 
   it('rejects provider and repeated invalid responses', async () => {
