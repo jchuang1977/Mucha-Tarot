@@ -1,4 +1,7 @@
 import TarotExperience from './TarotExperience';
+import { chatGPTSignInPath, chatGPTSignOutPath, getChatGPTUser } from './chatgpt-auth';
+
+export const dynamic = 'force-dynamic';
 
 function formattedTaipeiDate() {
   return new Intl.DateTimeFormat('zh-TW', {
@@ -6,6 +9,11 @@ function formattedTaipeiDate() {
   }).format(new Date());
 }
 
-export default function Home() {
-  return <TarotExperience formattedDate={formattedTaipeiDate()} />;
+export default async function Home() {
+  const user = await getChatGPTUser();
+  return <TarotExperience
+    formattedDate={formattedTaipeiDate()}
+    viewer={user ? { displayName: user.displayName, email: user.email } : null}
+    authHref={user ? chatGPTSignOutPath('/') : chatGPTSignInPath('/')}
+  />;
 }

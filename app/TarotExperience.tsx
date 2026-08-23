@@ -19,7 +19,11 @@ function errorCopy(error: TarotReading['error']) {
   return '連線暫時受到星霧干擾，請稍後為同一張牌重新解讀。';
 }
 
-export default function TarotExperience({ formattedDate }: { formattedDate: string }) {
+export default function TarotExperience({ formattedDate, viewer, authHref }: {
+  formattedDate: string;
+  viewer: { displayName: string; email: string } | null;
+  authHref: string;
+}) {
   const rootRef = useRef<HTMLElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -107,7 +111,15 @@ export default function TarotExperience({ formattedDate }: { formattedDate: stri
   return (
     <main className={`oracle-shell phase-${phase}`} ref={rootRef}>
       <div className="stars" aria-hidden="true" />
-      <header className="brand-bar intro-item"><span className="brand-mark" aria-hidden="true">✦</span><span>暮光塔羅</span><a href="/admin" className="admin-link">管理</a></header>
+      <header className="brand-bar intro-item">
+        <span className="brand-mark" aria-hidden="true">✦</span>
+        <span>暮光塔羅</span>
+        <nav className="brand-actions" aria-label="帳號與管理">
+          {viewer && <span className="viewer-name" title={viewer.email}>{viewer.displayName}</span>}
+          <a href={authHref} className="user-auth-link">{viewer ? '登出' : 'ChatGPT 登入'}</a>
+          <a href="/admin" className="admin-link">管理</a>
+        </nav>
+      </header>
       <section className="hero" aria-labelledby="page-title">
         <div className="hero-copy">
           <p className="eyebrow intro-item">A MOMENT FOR YOURSELF</p>

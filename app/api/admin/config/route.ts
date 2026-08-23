@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
-import { getAdminUser } from '../../../../lib/admin';
+import { getAdminSessionFromRequest } from '../../../../lib/admin';
 import { decryptSecret, encryptSecret, validateProviderBaseUrl } from '../../../../lib/crypto';
 import { getAiConfig, saveAiConfig } from '../../../../lib/database';
 import { testProvider } from '../../../../lib/provider';
@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 function unauthorized() { return NextResponse.json({ error: 'unauthorized' }, { status: 403 }); }
 
-export async function GET() {
-  if (!(await getAdminUser())) return unauthorized();
+export async function GET(request: Request) {
+  if (!(await getAdminSessionFromRequest(request))) return unauthorized();
   const config = await getAiConfig();
   return NextResponse.json(config ? {
     baseUrl: config.base_url, model: config.model, hasApiKey: true,
@@ -19,8 +19,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await getAdminUser();
-  if (!user) return unauthorized();
+  const session = await getAdminSessionFromRequest(request);
+  if (!session) return unauthorized();
 
   try {
     const body = await request.json() as { baseUrl?: unknown; model?: unknown; apiKey?: unknown };
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     await testProvider({ baseUrl, model, apiKey });
     const encrypted = await encryptSecret(apiKey, env.CONFIG_ENCRYPTION_KEY);
-    const version = await saveAiConfig({ baseUrl, model, ...encrypted, updatedBy: user.email });
+    const version = await saveAiConfig({ baseUrl, model, ...encrypted, updatedBy: session.username });
     return NextResponse.json({ ok: true, baseUrl, model, hasApiKey: true, version, lastTestedAt: new Date().toISOString() });
   } catch (error) {
     const message = error instanceof Error && !/Provider request failed/.test(error.message)

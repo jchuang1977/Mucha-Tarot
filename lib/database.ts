@@ -6,6 +6,16 @@ export type AiConfigRecord = {
   version: number; last_tested_at: string; updated_by: string; updated_at: string;
 };
 
+export type AdminCredentialRecord = {
+  id: number; username: string; password_hash: string; password_salt: string;
+  password_iterations: number; session_version: number; updated_by: string; updated_at: string;
+};
+
+type AdminLoginAttemptRecord = {
+  client_hash: string; attempts: number; window_started_at: string;
+  locked_until: string | null; updated_at: string;
+};
+
 let schemaPromise: Promise<void> | null = null;
 
 export function ensureDatabase(): Promise<void> {
@@ -27,8 +37,73 @@ async function initializeDatabase() {
     )`),
     env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_readings_identity
       ON daily_readings(date, card_id, orientation, config_version, prompt_version)`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS admin_credentials (
+      id INTEGER PRIMARY KEY, username TEXT NOT NULL,
+      password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, password_iterations INTEGER NOT NULL,
+      session_version INTEGER NOT NULL DEFAULT 1, updated_by TEXT NOT NULL, updated_at TEXT NOT NULL
+    )`),
+    env.DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_credentials_username
+      ON admin_credentials(username)`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS admin_login_attempts (
+      client_hash TEXT PRIMARY KEY, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL,
+      locked_until TEXT, updated_at TEXT NOT NULL
+    )`),
   ]);
   await env.DB.prepare('PRAGMA optimize').run();
+}
+
+export async function getAdminCredential(): Promise<AdminCredentialRecord | null> {
+  await ensureDatabase();
+  return env.DB.prepare('SELECT * FROM admin_credentials WHERE id = 1').first<AdminCredentialRecord>();
+}
+
+export async function getAdminCredentialByUsername(username: string): Promise<AdminCredentialRecord | null> {
+  await ensureDatabase();
+  return env.DB.prepare('SELECT * FROM admin_credentials WHERE username = ?')
+    .bind(username).first<AdminCredentialRecord>();
+}
+
+export async function saveAdminCredential(input: {
+  username: string; passwordHash: string; passwordSalt: string; passwordIterations: number; updatedBy: string;
+}): Promise<AdminCredentialRecord> {
+  await ensureDatabase();
+  const now = new Date().toISOString();
+  await env.DB.prepare(`INSERT INTO admin_credentials
+    (id, username, password_hash, password_salt, password_iterations, session_version, updated_by, updated_at)
+    VALUES (1, ?, ?, ?, ?, 1, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET username=excluded.username, password_hash=excluded.password_hash,
+      password_salt=excluded.password_salt, password_iterations=excluded.password_iterations,
+      session_version=admin_credentials.session_version + 1, updated_by=excluded.updated_by,
+      updated_at=excluded.updated_at`)
+    .bind(input.username, input.passwordHash, input.passwordSalt, input.passwordIterations, input.updatedBy, now).run();
+  const saved = await getAdminCredential();
+  if (!saved) throw new Error('管理員憑證儲存失敗');
+  return saved;
+}
+
+export async function getAdminLoginAttempt(clientHash: string): Promise<AdminLoginAttemptRecord | null> {
+  await ensureDatabase();
+  return env.DB.prepare('SELECT * FROM admin_login_attempts WHERE client_hash = ?')
+    .bind(clientHash).first<AdminLoginAttemptRecord>();
+}
+
+export async function saveAdminLoginAttempt(input: {
+  clientHash: string; attempts: number; windowStartedAt: string; lockedUntil: string | null;
+}): Promise<void> {
+  await ensureDatabase();
+  const now = new Date().toISOString();
+  await env.DB.prepare(`INSERT INTO admin_login_attempts
+    (client_hash, attempts, window_started_at, locked_until, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(client_hash) DO UPDATE SET attempts=excluded.attempts,
+      window_started_at=excluded.window_started_at, locked_until=excluded.locked_until,
+      updated_at=excluded.updated_at`)
+    .bind(input.clientHash, input.attempts, input.windowStartedAt, input.lockedUntil, now).run();
+}
+
+export async function clearAdminLoginAttempt(clientHash: string): Promise<void> {
+  await ensureDatabase();
+  await env.DB.prepare('DELETE FROM admin_login_attempts WHERE client_hash = ?').bind(clientHash).run();
 }
 
 export async function getAiConfig(): Promise<AiConfigRecord | null> {
