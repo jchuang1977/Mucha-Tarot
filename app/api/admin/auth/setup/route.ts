@@ -28,16 +28,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '兩次輸入的密碼不一致' }, { status: 400 });
   }
 
-  const hashed = await hashAdminPassword(password);
-  const credential = await saveAdminCredential({
-    username,
-    passwordHash: hashed.hash,
-    passwordSalt: hashed.salt,
-    passwordIterations: hashed.iterations,
-    updatedBy: user.email,
-  });
-  const session = await createAdminSession(credential.username, credential.session_version);
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(session.name, session.value, session.options);
-  return response;
+  try {
+    const hashed = await hashAdminPassword(password);
+    const credential = await saveAdminCredential({
+      username,
+      passwordHash: hashed.hash,
+      passwordSalt: hashed.salt,
+      passwordIterations: hashed.iterations,
+      updatedBy: user.email,
+    });
+    const session = await createAdminSession(credential.username, credential.session_version);
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(session.name, session.value, session.options);
+    return response;
+  } catch (error) {
+    console.error('Admin credential setup failed', error instanceof Error ? error.message : 'unknown error');
+    return NextResponse.json({ error: '無法建立管理員帳密，請稍後再試' }, { status: 500 });
+  }
 }

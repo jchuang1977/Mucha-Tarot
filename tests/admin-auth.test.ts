@@ -12,6 +12,7 @@ const secret = 'test-session-secret-with-more-than-thirty-two-characters';
 describe('admin password security', () => {
   it('hashes and verifies a password without storing the original value', async () => {
     const stored = await hashAdminPassword('A-long-admin-password-2026');
+    expect(stored.iterations).toBe(100_000);
     expect(stored.hash).not.toContain('A-long-admin-password-2026');
     expect(await verifyAdminPassword({ password: 'A-long-admin-password-2026', ...stored })).toBe(true);
     expect(await verifyAdminPassword({ password: 'wrong-password', ...stored })).toBe(false);

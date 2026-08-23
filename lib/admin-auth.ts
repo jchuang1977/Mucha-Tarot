@@ -2,7 +2,8 @@ const encoder = new TextEncoder();
 
 export const ADMIN_SESSION_COOKIE = 'twilight_admin_session';
 export const ADMIN_SESSION_SECONDS = 8 * 60 * 60;
-export const PASSWORD_ITERATIONS = 210_000;
+// Cloudflare Workers Web Crypto supports PBKDF2 iteration counts up to 100,000.
+export const PASSWORD_ITERATIONS = 100_000;
 
 export type AdminSessionPayload = {
   username: string;
@@ -51,7 +52,7 @@ export async function hashAdminPassword(password: string): Promise<{
 export async function verifyAdminPassword(input: {
   password: string; hash: string; salt: string; iterations: number;
 }): Promise<boolean> {
-  if (!Number.isInteger(input.iterations) || input.iterations < 100_000 || input.iterations > 1_000_000) return false;
+  if (!Number.isInteger(input.iterations) || input.iterations !== PASSWORD_ITERATIONS) return false;
   const salt = base64UrlToBytes(input.salt);
   const expected = base64UrlToBytes(input.hash);
   if (!salt || !expected) return false;

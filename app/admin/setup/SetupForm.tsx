@@ -23,8 +23,13 @@ export default function SetupForm({ resetting }: { resetting: boolean }) {
           passwordConfirmation: form.get('passwordConfirmation'),
         }),
       });
-      const body = await response.json() as { ok?: boolean; error?: string };
+      const text = await response.text();
+      let body: { ok?: boolean; error?: string } = {};
+      if (text) {
+        try { body = JSON.parse(text) as typeof body; } catch { /* Use the safe fallback below. */ }
+      }
       if (!response.ok) throw new Error(body.error ?? '設定失敗');
+      if (!body.ok) throw new Error('伺服器未確認設定結果，請再試一次');
       window.location.assign('/admin');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '設定失敗');
