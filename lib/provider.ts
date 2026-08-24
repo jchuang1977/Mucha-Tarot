@@ -3,6 +3,10 @@ import type { Orientation, ReadingContent, TarotCard } from './types';
 
 export type ProviderConfig = { baseUrl: string; model: string; apiKey: string };
 const keys: (keyof ReadingContent)[] = ['theme', 'relationships', 'workAndMoney', 'action', 'reminder'];
+const sectionLabels: Record<keyof ReadingContent, string> = {
+  theme: '今日主題', relationships: '感情人際', workAndMoney: '工作財運',
+  action: '行動建議', reminder: '今日提醒',
+};
 
 class InvalidResponseError extends Error {}
 
@@ -84,6 +88,25 @@ export async function generateReading(input: {
     ]);
     return parseReading(repaired);
   }
+}
+
+export async function generateReadingExtension(input: {
+  config: ProviderConfig; card: TarotCard; orientation: Orientation; date: string; section: keyof ReadingContent;
+}): Promise<string> {
+  const position = input.orientation === 'upright' ? '正位' : '逆位';
+  const raw = await providerRequest(input.config, [
+    {
+      role: 'system',
+      content: '你是「暮光塔羅」的解牌者。請用繁體中文，針對指定面向做溫柔、具體、可實踐的延伸解釋。避免宿命式保證、恐嚇，以及取代醫療、法律或投資等專業建議。只輸出一段 90 至 150 個中文字，不要 Markdown、標題、JSON 或條列。',
+    },
+    {
+      role: 'user',
+      content: `日期：${input.date}（Asia/Taipei）\n牌卡：${input.card.nameZh} / ${input.card.nameEn}\n方向：${position}\n請延伸「${sectionLabels[input.section]}」這個面向，給出今天可以留意的細節與一個溫和的做法。`,
+    },
+  ]);
+  const content = raw.trim().replace(/^```(?:text)?\s*/i, '').replace(/\s*```$/, '').trim();
+  if (content.length < 16) throw new InvalidResponseError('Extension is too short');
+  return content.slice(0, 900);
 }
 
 export function isInvalidProviderResponse(error: unknown): boolean {

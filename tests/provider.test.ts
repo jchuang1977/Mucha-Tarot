@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { generateReading, testProvider } from '../lib/provider';
+import { generateReading, generateReadingExtension, testProvider } from '../lib/provider';
 import { tarotDeck } from '../lib/tarot';
 
 const valid = JSON.stringify({
@@ -55,6 +55,14 @@ describe('AI reading validation', () => {
     const body = JSON.parse(request.mock.calls[0][1].body as string);
     expect(body.thinking).toEqual({ type: 'disabled' });
     expect(body.max_tokens).toBe(1200);
+  });
+
+  it('generates a focused extension for one reading section', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(providerResponse('今天先把注意力放回自己的節奏，留意那些讓你感到安定的小選擇。面對人際互動時，不必急著得到答案；清楚表達自己的界線，再給彼此一點回應的空間。')));
+    await expect(generateReadingExtension({
+      config: { baseUrl: 'https://api.example.com/v1', model: 'model', apiKey: 'secret' },
+      card: tarotDeck[0], orientation: 'upright', date: '2026-08-24', section: 'relationships',
+    })).resolves.toContain('人際互動');
   });
 
   it('rejects provider and repeated invalid responses', async () => {
