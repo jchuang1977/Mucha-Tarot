@@ -194,6 +194,7 @@ export default function TarotExperience({ formattedDate, viewer, authHref }: {
         <nav className="brand-actions" aria-label="帳號與管理">
           {viewer && <span className="viewer-name" title={viewer.email}>{viewer.displayName}</span>}
           <a href={authHref} className="user-auth-link">{viewer ? '登出' : 'ChatGPT 登入'}</a>
+          <a href="/cards" className="admin-link">牌面欣賞</a>
           <a href="/admin" className="admin-link">管理</a>
         </nav>
       </header>

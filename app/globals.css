@@ -98,6 +98,25 @@ footer { z-index: 1; padding: 18px 20px 22px; text-align: center; color: rgba(16
 .card-zoom-content img { display: block; width: 100%; max-height: min(70svh,680px); border-radius: 11px; object-fit: contain; background: var(--paper); }
 .card-zoom-content p { margin: 13px 30px 0; color: var(--gold-bright); text-align: center; font-size: .88rem; letter-spacing: .1em; }
 .card-zoom-close { position: absolute; z-index: 1; top: -13px; right: -13px; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(240,215,154,.72); border-radius: 50%; color: var(--night-deep); background: var(--gold-bright); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.gallery-shell { min-height: 100svh; position: relative; overflow-x: hidden; display: grid; grid-template-rows: auto auto auto 1fr auto; background: radial-gradient(circle at 50% 10%,rgba(47,106,96,.25),transparent 30rem),linear-gradient(145deg,#041112 0%,#092120 55%,#061718 100%); }
+.gallery-header { position: relative; }
+.gallery-header .admin-link { justify-self: end; }
+.gallery-hero { position: relative; z-index: 1; padding: clamp(48px,8vw,88px) 20px 28px; text-align: center; }
+.gallery-hero h1 { color: var(--ivory); font-size: clamp(2.4rem,6vw,4.5rem); }
+.gallery-hero p:last-child { max-width: 520px; margin: 18px auto 0; color: var(--mist); font-family: "Microsoft JhengHei",sans-serif; font-size: .9rem; line-height: 1.8; letter-spacing: .08em; }
+.gallery-filters { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; padding: 0 20px 34px; }
+.gallery-filters button { border: 1px solid rgba(200,169,104,.35); border-radius: 999px; padding: 9px 17px; color: var(--mist); background: rgba(7,25,26,.72); font-family: "Microsoft JhengHei",sans-serif; font-size: .78rem; letter-spacing: .08em; cursor: pointer; transition: color .2s ease,background .2s ease,border-color .2s ease; }
+.gallery-filters button:hover,.gallery-filters button.is-active { border-color: var(--gold); color: var(--night-deep); background: var(--gold-bright); }
+.gallery-filters button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 4px; }
+.card-gallery { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; padding: 0 clamp(20px,4vw,50px) 58px; display: grid; grid-template-columns: repeat(auto-fill,minmax(145px,1fr)); gap: 26px 18px; }
+.gallery-item { min-width: 0; border: 0; padding: 0; color: var(--ivory); background: transparent; text-align: center; cursor: zoom-in; }
+.gallery-item:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 7px; border-radius: 8px; }
+.gallery-card-frame { display: block; aspect-ratio: 2/3; padding: 5px; border: 1px solid rgba(240,215,154,.42); border-radius: 9px; background: linear-gradient(145deg,#e9ddbd,#9b7c43); box-shadow: 0 14px 28px rgba(0,0,0,.32); transition: transform .25s ease,box-shadow .25s ease; }
+.gallery-item:hover .gallery-card-frame { transform: translateY(-6px); box-shadow: 0 20px 38px rgba(0,0,0,.48),0 0 20px rgba(200,169,104,.15); }
+.gallery-card-frame img { display: block; width: 100%; height: 100%; border-radius: 5px; object-fit: contain; background: var(--paper); }
+.gallery-card-name { display: block; margin-top: 11px; color: var(--gold-bright); font-size: .98rem; letter-spacing: .1em; }
+.gallery-card-en { display: block; margin-top: 4px; color: var(--mist); font: .62rem Georgia,serif; letter-spacing: .03em; }
+.gallery-modal .card-zoom-content { width: min(470px,88vw); }
 
 .admin-shell { min-height: 100svh; display: grid; place-items: center; padding: 32px 20px; background: radial-gradient(circle at 50% 20%,rgba(43,105,94,.25),transparent 30rem),linear-gradient(145deg,#041112,#0b2624); }
 .admin-panel { width: min(660px,100%); border: 1px solid rgba(200,169,104,.42); border-radius: 24px 4px 24px 4px; padding: clamp(27px,5vw,48px); background: rgba(7,25,26,.86); box-shadow: 0 30px 90px rgba(0,0,0,.45); }
@@ -142,6 +161,9 @@ footer { z-index: 1; padding: 18px 20px 22px; text-align: center; color: rgba(16
   .reading-footer { flex-direction: column; align-items: flex-start; }
   .card-zoom-backdrop { padding: 18px; }
   .interpreting-status { bottom: 18px; white-space: nowrap; }
+  .card-gallery { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px 13px; padding-inline: 17px; }
+  .gallery-filters { gap: 7px; padding-inline: 12px; }
+  .gallery-filters button { padding: 8px 12px; font-size: .7rem; }
 }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
